@@ -30,7 +30,7 @@ Everything is served from one FastAPI process in production, so cookies (`SameSi
 backend/
   app/            config, models, security, services, routers, seed data, CLI
   alembic/        migration environment + initial revision
-  tests/          124 pytest tests (API behaviour, authorization, money, uploads, migrations)
+  tests/          161 pytest tests (API behaviour, authorization, money, uploads, migrations)
 frontend/
   src/            storefront pages, admin pages, shared API client and components
 docs/             API, deployment, security, backup & restore
@@ -54,6 +54,7 @@ Verified against a live server with seeded demo data (see [Verification](#verifi
 - Second-hand marketplace: browse approved listings, report a listing, buy a listing (creates a real order + commission record).
 - Sell Your Books: photo upload, condition details, submission reference; nothing is public until moderated.
 - Bulk quotation request with line items, then review/accept/decline using the tokenised quotation page and printable document.
+- Sign in with email + password **or Google** (ID token verified server-side; roles never come from the token).
 - Contact page (messages land in the admin inbox), FAQ, About, policy pages that only state configured facts.
 - SEO: per-route titles/descriptions/canonical tags, `sitemap.xml`, `robots.txt`, legacy `.html` URLs 301-redirected to the SPA.
 
@@ -73,7 +74,7 @@ Verified against a live server with seeded demo data (see [Verification](#verifi
 
 **Platform**
 
-- 124 automated tests pass; see the exact command and result below.
+- 161 automated tests pass; see the exact command and result below.
 - Alembic baseline migration reproduces the full schema; `upgrade head` is idempotent.
 - Optional Razorpay integration with signed webhook handling, order signature verification and a payment-pending state that never fakes success.
 - Notification fallback that tells the truth: in-app always, email only when SMTP is configured, SMS/WhatsApp explicitly not implemented.
@@ -84,6 +85,7 @@ Verified against a live server with seeded demo data (see [Verification](#verifi
 
 These are deliberate, documented boundaries rather than hidden gaps:
 
+- **Recurring subscriptions are deliberately not implemented.** The store sells one-time items; no recurring benefit has been defined. See [`docs/DECISIONS.md`](docs/DECISIONS.md) ADR-001 for the reasoning and what would be needed to add them. Bulk quotation covers school/office repeat purchasing in the meantime.
 - **SMS and WhatsApp notifications** are not implemented. Those records are stored with status `skipped`.
 - **Razorpay has not been exercised against the live gateway** in this environment (no merchant keys). The code paths (create-order, signature confirm, signed webhook, idempotent retry) are covered by tests using locally computed signatures, but a real end-to-end payment has not been run by the author.
 - **No payouts are automated.** Commission is an accounting record; selling money is transferred by the store outside the system and then recorded.
@@ -160,7 +162,7 @@ PATH="../.venv/bin:$PATH" python -m pytest tests -q
 Result of the final run in this repository:
 
 ```
-124 passed, 1 warning in 19.82s
+161 passed, 1 warning in 26.27s
 ```
 
 (The single warning is a Starlette/anyio deprecation notice, not a failure.)
@@ -237,7 +239,9 @@ All three run migrations on boot (`alembic upgrade head`). Free plans stop idle 
 - [`docs/SECURITY.md`](docs/SECURITY.md) — controls, authorization matrix, residual risk.
 - [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md) — backups, restore drills, retention.
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — day-to-day shop workflows (orders, moderation, quotes, refunds).
-- [`docs/HOSTING.md`](docs/HOSTING.md) — getting a permanent public URL (Render / VPS / Fly).
+- [`docs/HOSTING.md`](docs/HOSTING.md) — getting a permanent public URL (Render / VPS / Fly), Google OAuth setup, keep-alive.
+- [`docs/PAYMENTS.md`](docs/PAYMENTS.md) — one-time Razorpay checkout: test mode, webhooks, failure handling, refunds.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — why subscriptions are deferred, Google sign-in approach, free-hosting limits.
 
 ## Licence / ownership
 
