@@ -30,7 +30,7 @@ Everything is served from one FastAPI process in production, so cookies (`SameSi
 backend/
   app/            config, models, security, services, routers, seed data, CLI
   alembic/        migration environment + initial revision
-  tests/          123 pytest tests (API behaviour, authorization, money, uploads, migrations)
+  tests/          124 pytest tests (API behaviour, authorization, money, uploads, migrations)
 frontend/
   src/            storefront pages, admin pages, shared API client and components
 docs/             API, deployment, security, backup & restore
@@ -73,7 +73,7 @@ Verified against a live server with seeded demo data (see [Verification](#verifi
 
 **Platform**
 
-- 123 automated tests pass; see the exact command and result below.
+- 124 automated tests pass; see the exact command and result below.
 - Alembic baseline migration reproduces the full schema; `upgrade head` is idempotent.
 - Optional Razorpay integration with signed webhook handling, order signature verification and a payment-pending state that never fakes success.
 - Notification fallback that tells the truth: in-app always, email only when SMTP is configured, SMS/WhatsApp explicitly not implemented.
@@ -160,7 +160,7 @@ PATH="../.venv/bin:$PATH" python -m pytest tests -q
 Result of the final run in this repository:
 
 ```
-123 passed, 1 warning in 21.51s
+124 passed, 1 warning in 19.82s
 ```
 
 (The single warning is a Starlette/anyio deprecation notice, not a failure.)

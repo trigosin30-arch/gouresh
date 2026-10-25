@@ -57,7 +57,21 @@ async def lifespan(app: FastAPI):
         from .seed import seed_demo
 
         with SessionLocal() as db:
-            seed_demo(db)
+            seeded = seed_demo(db)
+        if seeded and not seeded.get("skipped"):
+            # Demo mode only. When DEMO_*_PASSWORD is not supplied the seed
+            # generates one, and it would otherwise be unrecoverable — the
+            # operator can read it here and change it in the admin panel.
+            logger.warning(
+                "DEMO DATA CREATED — sign in with: administrator=%s / %s ; customer=%s / %s . "
+                "Change these in Admin → Customers, and set SEED_DEMO=0 for a real launch.",
+                seeded.get("admin_email"),
+                seeded.get("admin_password"),
+                seeded.get("demo_customer_email"),
+                seeded.get("demo_customer_password"),
+            )
+        elif seeded and seeded.get("skipped"):
+            logger.info("Demo seed skipped: %s", seeded.get("reason"))
     task = asyncio.create_task(_reservation_sweeper())
     try:
         yield

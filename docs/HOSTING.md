@@ -31,6 +31,8 @@ The repository is public and already contains a `Dockerfile` and a `render.yaml`
 | Customer | `demo.customer@example.com` | the `DEMO_CUSTOMER_PASSWORD` you set |
 | Seller | `demo.seller@example.com` | same as the customer password |
 
+If those variables were left blank, the seed generates passwords and prints them once in the service log as a line beginning `DEMO DATA CREATED — sign in with: …`. Read them from **Logs**, sign in, and change them in **Admin → Customers**. Re-deploys do not re-seed (the seed skips when the catalogue already has products), so the passwords stay stable.
+
 Open `/admin` for the panel. Because `SEED_DEMO=1`, the catalogue is sample data with visible “SAMPLE DATA — demo mode” labels and a demo banner.
 
 **Honest free-tier limits**

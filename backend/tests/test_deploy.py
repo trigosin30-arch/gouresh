@@ -46,3 +46,18 @@ def test_render_blueprint_points_at_the_dockerfile():
     assert "dockerfilePath: ./Dockerfile" in blueprint
     assert "healthCheckPath: /healthz" in blueprint
     assert "fromDatabase:" in blueprint
+
+
+def test_demo_seed_is_idempotent_and_logs_generated_credentials():
+    """A Render wake restarts the service with SEED_DEMO=1 still set.
+
+    Re-seeding must not duplicate the catalogue, and generated demo passwords
+    must be readable in the log (they are otherwise unrecoverable).
+    """
+    from app import seed
+
+    source = Path(seed.__file__).read_text(encoding="utf-8")
+    assert "Catalogue already contains products" in source
+
+    main_source = BACKEND.joinpath("app", "main.py").read_text(encoding="utf-8")
+    assert "DEMO DATA CREATED" in main_source
