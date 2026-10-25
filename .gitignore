@@ -1,0 +1,25 @@
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.db
+*.sqlite3
+backend/.env
+.env
+
+# node
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# playwright / coverage
+coverage/
+playwright-report/
