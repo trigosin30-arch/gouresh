@@ -30,7 +30,7 @@ Everything is served from one FastAPI process in production, so cookies (`SameSi
 backend/
   app/            config, models, security, services, routers, seed data, CLI
   alembic/        migration environment + initial revision
-  tests/          114 pytest tests (API behaviour, authorization, money, uploads, migrations)
+  tests/          118 pytest tests (API behaviour, authorization, money, uploads, migrations)
 frontend/
   src/            storefront pages, admin pages, shared API client and components
 docs/             API, deployment, security, backup & restore
@@ -73,7 +73,7 @@ Verified against a live server with seeded demo data (see [Verification](#verifi
 
 **Platform**
 
-- 114 automated tests pass; see the exact command and result below.
+- 118 automated tests pass; see the exact command and result below.
 - Alembic baseline migration reproduces the full schema; `upgrade head` is idempotent.
 - Optional Razorpay integration with signed webhook handling, order signature verification and a payment-pending state that never fakes success.
 - Notification fallback that tells the truth: in-app always, email only when SMTP is configured, SMS/WhatsApp explicitly not implemented.
@@ -160,7 +160,7 @@ PATH="../.venv/bin:$PATH" python -m pytest tests -q
 Result of the final run in this repository:
 
 ```
-114 passed, 1 warning in 16.17s
+118 passed, 1 warning in 14.21s
 ```
 
 (The single warning is a Starlette/anyio deprecation notice, not a failure.)
@@ -220,6 +220,16 @@ Residual risks, stated plainly:
 
 ---
 
+## Hosting
+
+A permanent public URL needs a real host — the coding sandbox behind the preview links is disposable. Three ready paths are documented in [`docs/HOSTING.md`](docs/HOSTING.md):
+
+* **Render (one click, free tier):** the repo ships a `Dockerfile` + `render.yaml` blueprint — <https://render.com/deploy?repo=https://github.com/trigosin30-arch/gouresh>
+* **Your own VPS:** `docker compose up -d --build` (Postgres + app + persistent uploads), or systemd/nginx per `docs/DEPLOYMENT.md`.
+* **Fly.io:** `fly.toml` included, Mumbai region, `/healthz` health check.
+
+All three run migrations on boot (`alembic upgrade head`). The app accepts `postgres://`, `postgresql://` and `postgresql+psycopg://` URLs, so managed database credentials work as-is.
+
 ## Documentation
 
 - [`docs/API.md`](docs/API.md) — endpoint map, conventions, error handling.
@@ -227,6 +237,7 @@ Residual risks, stated plainly:
 - [`docs/SECURITY.md`](docs/SECURITY.md) — controls, authorization matrix, residual risk.
 - [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md) — backups, restore drills, retention.
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — day-to-day shop workflows (orders, moderation, quotes, refunds).
+- [`docs/HOSTING.md`](docs/HOSTING.md) — getting a permanent public URL (Render / VPS / Fly).
 
 ## Licence / ownership
 

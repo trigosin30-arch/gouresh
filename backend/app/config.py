@@ -13,13 +13,27 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 
 
+def _normalise_database_url(url: str) -> str:
+    """Make managed-database URLs work out of the box.
+
+    Hosting providers hand out ``postgres://`` or ``postgresql://`` DSNs, which
+    SQLAlchemy maps to the psycopg2 driver. This project ships psycopg 3, so the
+    driver is pinned explicitly. SQLite URLs are returned untouched.
+    """
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
 class Settings:
     """Runtime settings loaded from the environment."""
 
     def __init__(self) -> None:
         self.env = os.getenv("APP_ENV", "development").lower()
-        self.database_url = os.getenv(
-            "DATABASE_URL", f"sqlite:///{BASE_DIR / 'data' / 'app.db'}"
+        self.database_url = _normalise_database_url(
+            os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'data' / 'app.db'}")
         )
         self.secret_key = os.getenv("SECRET_KEY", "")
         self.session_cookie_name = os.getenv("SESSION_COOKIE_NAME", "asm_session")

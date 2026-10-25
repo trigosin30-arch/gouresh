@@ -1,0 +1,51 @@
+# Fly.io deployment. Optional alternative to Render.
+#
+#   fly launch --no-deploy --copy-config --name ankit-stationery-mart
+#   fly postgres create --name asm-db
+#   fly postgres attach asm-db           # sets DATABASE_URL automatically
+#   fly secrets set SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')"
+#   fly secrets set SEED_DEMO=1 DEMO_ADMIN_PASSWORD=... DEMO_CUSTOMER_PASSWORD=...
+#   fly deploy
+#
+# Fly needs a card on file, and its free allowance is limited. Uploads are
+# ephemeral unless a volume is mounted (see [[mounts]] below, then delete the
+# comment markers).
+
+app = "ankit-stationery-mart"
+primary_region = "bom"          # Mumbai — closest to Jalandhar
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  UPLOAD_DIR = "/app/data/uploads"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 100
+    soft_limit = 50
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/healthz"
+
+# Persistent uploads on Fly require a volume. Uncomment after creating one:
+#   fly volumes create asm_uploads --size 1
+# [[mounts]]
+#   source = "asm_uploads"
+#   destination = "/app/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

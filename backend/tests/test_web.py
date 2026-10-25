@@ -98,3 +98,19 @@ def test_missing_build_returns_a_helpful_message(client, monkeypatch):
     assert response.status_code == 200
     assert "Frontend build not found" in response.text
     assert client.get("/products").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "given,expected",
+    [
+        ("postgres://u:p@h:5432/db", "postgresql+psycopg://u:p@h:5432/db"),
+        ("postgresql://u:p@h:5432/db", "postgresql+psycopg://u:p@h:5432/db"),
+        ("postgresql+psycopg://u:p@h/db", "postgresql+psycopg://u:p@h/db"),
+        ("sqlite:////tmp/x.db", "sqlite:////tmp/x.db"),
+    ],
+)
+def test_database_urls_from_hosting_providers_are_normalised(given, expected):
+    """Render/Heroku hand out postgres:// DSNs; they must map to the bundled driver."""
+    from app.config import _normalise_database_url
+
+    assert _normalise_database_url(given) == expected

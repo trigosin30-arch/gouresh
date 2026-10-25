@@ -1,0 +1,66 @@
+# Render blueprint — one-click deploy of the whole app (API + built SPA + Postgres).
+#
+# 1. Push this repository to GitHub (already done for this project).
+# 2. Open https://render.com/deploy?repo=https://github.com/trigosin30-arch/gouresh
+#    (or Render dashboard → New → Blueprint → pick the repo).
+# 3. Render creates the database and web service, then builds the Dockerfile.
+# 4. Set DEMO_ADMIN_PASSWORD / DEMO_CUSTOMER_PASSWORD when prompted (or leave the
+#    defaults below and change them in the admin panel immediately after).
+#
+# Free-tier notes: the free web service sleeps after ~15 minutes of inactivity
+# (first request afterwards takes ~30s) and has an ephemeral filesystem, so
+# uploaded images are lost on redeploy. Attach a Render disk (paid) to
+# /app/data if uploads must survive. Free Postgres instances expire, so move to
+# a paid plan or an external database before relying on this for real trading.
+
+databases:
+  - name: asm-db
+    databaseName: asm_store
+    user: asm
+    plan: free
+    region: singapore
+
+services:
+  - type: web
+    name: ankit-stationery-mart
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: asm-db
+          property: connectionString
+      - key: UPLOAD_DIR
+        value: /app/data/uploads
+      # Demo catalogue so the deployed site is not empty. Set to "0" for a real shop.
+      - key: SEED_DEMO
+        value: "1"
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_CUSTOMER_PASSWORD
+        sync: false
+      # Optional integrations — leave blank to keep them honestly disabled.
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
