@@ -47,20 +47,23 @@ services:
         sync: false
       - key: DEMO_CUSTOMER_PASSWORD
         sync: false
-      # Optional integrations — leave blank to keep them honestly disabled.
+      # Optional integrations. Empty values keep them honestly disabled:
+      # online payment is then unavailable at checkout and notifications are
+      # recorded as "skipped" rather than claimed as sent. Fill these in from
+      # the Render dashboard once you have real gateway/SMTP credentials.
       - key: RAZORPAY_KEY_ID
-        sync: false
+        value: ""
       - key: RAZORPAY_KEY_SECRET
-        sync: false
+        value: ""
       - key: RAZORPAY_WEBHOOK_SECRET
-        sync: false
+        value: ""
       - key: SMTP_HOST
-        sync: false
+        value: ""
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        value: ""
       - key: SMTP_PASSWORD
-        sync: false
+        value: ""
       - key: SMTP_FROM
-        sync: false
+        value: ""
