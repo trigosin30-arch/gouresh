@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ankit Stationery Mart — Stationery, Books & Second-Hand Books | Jalandhar Cantt</title>
+<meta name="description" content="Shop stationery, school supplies, new books and second-hand books online from Ankit Stationery Mart, 147 Moolraj Road, Jalandhar Cantt. Local delivery & store pickup. Sell your used books.">
+<link rel="canonical" href="/"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f5257'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='%23f5b942' font-family='Arial' font-weight='bold'>A</text></svg>">
+<link rel="stylesheet" href="/css/app.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Store","name":"Ankit Stationery Mart","address":{"@type":"PostalAddress","streetAddress":"147 Moolraj Road, Jalandhar Cantt","addressLocality":"Jalandhar Cantt","addressRegion":"Punjab","postalCode":"144005","addressCountry":"IN"}}</script>
+</head>
+<body>
+<a class="skip" href="#app">Skip to content</a>
+<header class="hdr">
+  <div class="hdr-top wrap">
+    <button class="icon-btn only-mob" id="menuBtn" aria-label="Menu">☰</button>
+    <a class="brand" href="#/"><span class="logo">A</span><span class="brand-t"><b>Ankit</b> Stationery Mart<small>Jalandhar Cantt</small></span></a>
+    <button class="pin-btn" id="pinBtn" title="Choose delivery area">📍 <span id="pinLabel">Set PIN</span></button>
+    <form class="search" id="searchForm" role="search">
+      <input id="searchInput" type="search" placeholder="Search books by title, author, ISBN, class, board… or pens, notebooks" aria-label="Search products" autocomplete="off">
+      <button type="submit" aria-label="Search">🔍</button>
+      <div id="suggest" class="suggest hidden"></div>
+    </form>
+    <nav class="hdr-acts">
+      <a href="#/sell" class="hdr-link hide-mob">Sell Books</a>
+      <a href="#/account" class="hdr-link" id="accountLink">👤 <span id="accountName">Sign in</span></a>
+      <a href="#/wishlist" class="hdr-link hide-mob" aria-label="Wishlist">♡</a>
+      <a href="#/cart" class="cart-link" aria-label="Cart">🛒<span class="badge" id="cartBadge">0</span></a>
+    </nav>
+  </div>
+  <nav class="hdr-nav wrap" id="mainNav" aria-label="Main">
+    <a href="#/shop">Shop All</a><a href="#/shop?category=books">Books</a><a href="#/shop?category=stationery">Stationery</a>
+    <a href="#/shop?category=school-supplies">School Supplies</a><a href="#/used">Second-Hand Books</a>
+    <a href="#/boards">Boards & Classes</a><a href="#/bulk">Bulk Orders</a><a href="#/sell">Sell Your Books</a>
+    <a href="#/contact">Contact</a><a href="#/track">Track Order</a><a href="#/admin" id="adminLink" class="hidden">⚙ Admin</a>
+  </nav>
+</header>
+<div id="offlineBar" class="offline hidden" role="alert">⚠ You appear to be offline. Prices and stock may be out of date.</div>
+<main id="app" class="wrap" tabindex="-1"><div class="loading">Loading the store…</div></main>
+<footer class="ftr"><div class="wrap ftr-grid">
+  <div><h4>Ankit Stationery Mart</h4><p id="ftrAddr">147 Moolraj Road, Jalandhar Cantt, Punjab 144005, India</p><p id="ftrContact"></p><p id="ftrHours"></p></div>
+  <div><h4>Shop</h4><a href="#/shop">Shop All</a><a href="#/shop?category=books">New Books</a><a href="#/used">Second-Hand Books</a><a href="#/boards">Boards & Classes</a><a href="#/bulk">Bulk Orders</a></div>
+  <div><h4>Help</h4><a href="#/track">Track your order</a><a href="#/faq">FAQ</a><a href="#/contact">Contact & location</a><a href="#/policy/returns">Delivery & Returns</a><a href="#/sell">Sell your books</a></div>
+  <div><h4>Policies</h4><a href="#/policy/privacy">Privacy Policy</a><a href="#/policy/terms">Terms of Use</a><a href="#/about">About the store</a></div>
+</div><div class="ftr-base wrap">© <span id="yr"></span> Ankit Stationery Mart · Prices in ₹ · Second-hand marketplace listings are sold by individual customers; the store discloses its commission before checkout.</div></footer>
+<nav class="mob-nav" aria-label="Mobile">
+  <a href="#/">🏠<span>Home</span></a><a href="#/shop">🛍<span>Shop</span></a><a href="#/used">📚<span>Used</span></a><a href="#/cart">🛒<span>Cart</span></a><a href="#/account">👤<span>Account</span></a>
+</nav>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><button class="modal-x" id="modalX" aria-label="Close">✕</button><div id="modalBody"></div></div></div>
+<script src="/js/app.js"></script><script src="/js/admin.js"></script>
+</body></html>
