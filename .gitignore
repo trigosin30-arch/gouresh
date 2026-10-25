@@ -33,3 +33,6 @@ frontend/.vite/
 .DS_Store
 .idea/
 .vscode/
+
+# Local demo data created by scripts/serve-demo.sh
+.demo/

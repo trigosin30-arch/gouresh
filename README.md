@@ -115,6 +115,13 @@ SECRET_KEY="development-only-secret-key-change-me" \
 ../.venv/bin/python -m uvicorn app.main:app --reload --port 8000
 ```
 
+Or just use the wrapper script, which builds the SPA on first run, keeps its demo database in `.demo/` and prints the URLs and demo logins:
+
+```bash
+./scripts/serve-demo.sh          # http://127.0.0.1:8000
+PORT=3000 ./scripts/serve-demo.sh
+```
+
 The API is now on `http://127.0.0.1:8000` and serves the SPA if `frontend/dist` exists. For frontend development with hot reload:
 
 ```bash
