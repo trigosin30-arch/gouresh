@@ -1,0 +1,55 @@
+# Render blueprint: FastAPI backend (always-on requirements are noted in README).
+services:
+  - type: web
+    name: asm-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.2
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false # paste the Supabase connection string
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: DEV_AUTH
+        value: "false"
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: PAYMENTS_MOCK
+        value: "false"
+      - key: CORS_ORIGINS
+        sync: false # https://your-storefront.example.com
+      - key: ALLOW_PREVIEW_ORIGINS
+        value: "false"
+      - key: SEED_ON_STARTUP
+        value: "false"
+      - key: DEV_JWT_SECRET
+        generateValue: true
+
+  - type: web
+    name: asm-storefront
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false # https://asm-api.onrender.com
