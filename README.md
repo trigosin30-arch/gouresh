@@ -228,7 +228,7 @@ A permanent public URL needs a real host — the coding sandbox behind the previ
 * **Your own VPS:** `docker compose up -d --build` (Postgres + app + persistent uploads), or systemd/nginx per `docs/DEPLOYMENT.md`.
 * **Fly.io:** `fly.toml` included, Mumbai region, `/healthz` health check.
 
-All three run migrations on boot (`alembic upgrade head`). The app accepts `postgres://`, `postgresql://` and `postgresql+psycopg://` URLs, so managed database credentials work as-is.
+All three run migrations on boot (`alembic upgrade head`). Free plans stop idle instances, so `scripts/keepalive.sh` and a `SITE_URL` repository variable keep the site warm — see the docs for that and its limits. The app accepts `postgres://`, `postgresql://` and `postgresql+psycopg://` URLs, so managed database credentials work as-is.
 
 ## Documentation
 

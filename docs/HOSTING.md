@@ -80,6 +80,56 @@ Fly requires a payment method. Uploads are ephemeral unless you create a volume 
 
 ---
 
+## Keeping the site awake (free tiers sleep)
+
+Free plans stop the container after a period of no traffic (Render: ~15 minutes). The next visitor then waits 30–60 seconds while it boots and runs migrations. Three ways to deal with it, in order of how well they work:
+
+| Approach | Cost | Reality |
+| --- | --- | --- |
+| **Paid instance** (Render Starter or similar) | ~$7/month | The only supported way. Sleeping is disabled; no cold starts, no hacks. |
+| **External keep-alive ping** to `/healthz` every 5 minutes | free | Keeps the web service warm in practice. GitHub's scheduler is best-effort and can drift past 15 minutes, so use a dedicated monitor (cron-job.org, UptimeRobot) for reliability, with the bundled workflow as a backup. |
+| **Self-host** on a VPS or an always-on PC | VPS ~₹300–500/month, or free on hardware you already own | No sleeping at all. `docker compose up -d` plus nginx/TLS. |
+
+### Bundled keep-alive
+
+Two options ship with the repo:
+
+**a) GitHub Actions (no extra account)**
+
+1. Repo → **Settings → Secrets and variables → Actions → Variables → New repository variable**
+2. Name `SITE_URL`, value `https://ankit-stationery-mart.onrender.com`
+3. `.github/workflows/keepalive.yml` then pings `/healthz` every 10 minutes and warns if the response is not 200.
+
+Without that variable the job exits immediately and probes nothing.
+
+**b) Any always-on machine you control**
+
+```bash
+SITE_URL=https://ankit-stationery-mart.onrender.com ./scripts/keepalive.sh
+# or a single probe, for cron / Task Scheduler:
+SITE_URL=https://ankit-stationery-mart.onrender.com ./scripts/keepalive.sh --once
+```
+
+`INTERVAL=240` changes the cadence (seconds). A cron entry on a VPS:
+
+```cron
+*/5 * * * * SITE_URL=https://ankit-stationery-mart.onrender.com /path/to/scripts/keepalive.sh --once >> /var/log/asm-keepalive.log 2>&1
+```
+
+**What keep-alive does *not* fix**
+
+* **Free database expiry.** Render's free PostgreSQL is time-limited on a fixed schedule shown in its dashboard. A ping does not extend it. Before that date, move to a paid database or an external Postgres (Neon, Supabase, RDS) and update `DATABASE_URL` — the app accepts `postgres://`, `postgresql://` and `postgresql+psycopg://`.
+* **Lost uploads.** The free filesystem is ephemeral; images disappear on redeploy. Attach a disk mounted at `/app/data` (paid) or accept that demo photos are throwaway.
+* **Scaling or reliability.** A single free instance with no SLA is a demo, not a shop. For real trading use a paid instance or your own server, and set up the backups in [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md).
+* **The e2b sandbox preview.** Those URLs live and die with the coding sandbox; traffic cannot keep them alive. `scripts/keepalive.sh` therefore only makes sense for the deployed site.
+
+### Choosing
+
+* Showing the site to family/suppliers this month → free plan + `SITE_URL` variable or a 5-minute monitor.
+* Taking real orders → paid instance (or VPS) and `SEED_DEMO=0`.
+
+---
+
 ## What I can and cannot do from this session
 
 * **Done:** the deployment artifacts (`Dockerfile`, `render.yaml`, `docker-compose.yml`, `fly.toml`, CI workflow), Postgres driver wiring, `postgres://` URL normalisation, and the code pushed to GitHub.
