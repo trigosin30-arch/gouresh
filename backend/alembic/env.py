@@ -12,7 +12,7 @@ from sqlalchemy import engine_from_config, pool
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.config import settings  # noqa: E402
+from app.config import _normalise_database_url, settings  # noqa: E402
 from app.db import Base  # noqa: E402
 from app import models  # noqa: F401,E402  (register tables)
 
@@ -20,7 +20,11 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.getenv("DATABASE_URL", settings.database_url)
+# Prefer an explicit DATABASE_URL (that is what containers and tests set), then
+# fall back to the app settings. Either way the URL is normalised, so managed
+# provider DSNs (postgres://…, postgresql://…) select the bundled psycopg 3
+# driver instead of the absent psycopg2.
+database_url = _normalise_database_url(os.getenv("DATABASE_URL") or settings.database_url)
 config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata

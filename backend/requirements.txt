@@ -9,8 +9,8 @@ argon2-cffi==23.1.0
 python-multipart==0.0.20
 email-validator==2.2.0
 pillow==11.0.0
-# PostgreSQL driver for production (install on the server)
-# psycopg[binary]==3.2.3
+# PostgreSQL driver (used by DATABASE_URL=postgresql+psycopg://…)
+psycopg[binary]==3.2.3
 
 # Test suite
 pytest==8.3.4
