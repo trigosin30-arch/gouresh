@@ -16,6 +16,7 @@ from ..schemas import (
     AddressIn,
     ChangePasswordIn,
     ForgotPasswordIn,
+    GoogleLoginIn,
     LoginIn,
     ProfileIn,
     RegisterIn,
@@ -23,8 +24,10 @@ from ..schemas import (
 )
 from ..security import (
     SESSION_COOKIE,
+    UNUSABLE_PASSWORD,
     clear_session_cookies,
     get_current_user,
+    has_usable_password,
     hash_password,
     issue_session,
     require_user,
@@ -36,6 +39,9 @@ from ..security import (
 from ..serializers import user_public
 from ..services import settings as store_settings
 from ..services.audit import audit
+from ..services.google_auth import GoogleAuthError, GoogleIdentity
+from ..services.google_auth import is_configured as google_is_configured
+from ..services.google_auth import verify_credential as verify_google_credential
 from ..services.commerce import merge_carts
 from ..services.notifications import notify_user
 from ..services.rate_limit import client_ip, enforce
@@ -119,24 +125,182 @@ def login(payload: LoginIn, request: Request, response: Response, db: OrmSession
         )
     user.last_login_at = now()
     db.commit()
+    _merge_guest_cart(db, user, request)
+    payload_out = _start_session(db, user, request, response)
+    audit(db, "auth.login", actor=user, entity_type="user", entity_id=user.id, ip_address=client_ip(request), commit=True)
+    return payload_out
 
+
+def _merge_guest_cart(db: OrmSession, user: User, request: Request) -> None:
+    """Attach an anonymous cart to the account that just signed in."""
     guest_token = request.cookies.get("asm_guest_cart")
-    if guest_token:
-        guest_cart = db.scalar(select(Cart).where(Cart.guest_token == guest_token))
-        if guest_cart:
-            user_cart = db.scalar(select(Cart).where(Cart.user_id == user.id))
-            if not user_cart:
-                user_cart = Cart(user_id=user.id)
-                db.add(user_cart)
-                db.commit()
-            merge_carts(db, guest_cart, user_cart)
+    if not guest_token:
+        return
+    guest_cart = db.scalar(select(Cart).where(Cart.guest_token == guest_token))
+    if not guest_cart:
+        return
+    user_cart = db.scalar(select(Cart).where(Cart.user_id == user.id))
+    if not user_cart:
+        user_cart = Cart(user_id=user.id)
+        db.add(user_cart)
+        db.commit()
+    merge_carts(db, guest_cart, user_cart)
 
+
+def _start_session(db: OrmSession, user: User, request: Request, response: Response) -> dict:
+    """Issue cookies for a verified user. Callers must have checked status."""
     raw_token, csrf = issue_session(db, user, request)
     set_session_cookies(response, raw_token)
     response.set_cookie("asm_csrf", csrf, samesite="lax", secure=settings.secure_cookies, path="/")
     response.delete_cookie("asm_guest_cart", path="/")
-    audit(db, "auth.login", actor=user, entity_type="user", entity_id=user.id, ip_address=client_ip(request), commit=True)
     return {"user": user_public(user)}
+
+
+def _assert_can_sign_in(user: User) -> None:
+    if user.status == "active":
+        return
+    raise HTTPException(
+        status.HTTP_403_FORBIDDEN,
+        "This account is restricted. Contact the store to resolve it."
+        if user.status == "restricted"
+        else "This account is not active. Contact the store.",
+    )
+
+
+@router.get("/providers")
+def auth_providers():
+    """Which sign-in methods this deployment actually supports.
+
+    The client id is public by design (it is embedded in the Google button), but
+    it is only advertised when the server can verify the tokens it receives.
+    """
+    return {
+        "google": {
+            "enabled": google_is_configured(),
+            "client_id": settings.google_client_id or None,
+        },
+        "password": {"enabled": True},
+    }
+
+
+def _google_login(db: OrmSession, identity: GoogleIdentity, request: Request, response: Response) -> dict:
+    """Resolve a verified Google identity to an account and start a session."""
+    user = db.scalar(select(User).where(User.google_sub == identity.sub))
+    created = False
+    linked = False
+
+    if not user:
+        user = db.scalar(select(User).where(func.lower(User.email) == identity.email))
+        if user:
+            if user.google_sub and user.google_sub != identity.sub:
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    "This email is already linked to a different Google account. Sign in the way you registered.",
+                )
+            # Google has verified this person controls the mailbox. Since a
+            # password reset goes to the same mailbox, linking grants no extra
+            # access that email control did not already imply. Roles are never
+            # changed by this path.
+            user.google_sub = identity.sub
+            if not user.email_verified_at:
+                user.email_verified_at = now()
+            linked = True
+            db.commit()
+            audit(db, "auth.google_linked", actor=user, entity_type="user", entity_id=user.id, after={"sub": identity.sub[:12] + "…"}, ip_address=client_ip(request), commit=True)
+        else:
+            full_name = (identity.name or identity.email.split("@")[0]).strip()[:120] or "Customer"
+            user = User(
+                email=identity.email,
+                full_name=full_name,
+                password_hash=UNUSABLE_PASSWORD,
+                role="customer",          # never derived from the token
+                status="active",
+                google_sub=identity.sub,
+                email_verified_at=now(),
+            )
+            db.add(user)
+            db.commit()
+            created = True
+            audit(db, "auth.google_registered", actor=user, entity_type="user", entity_id=user.id, ip_address=client_ip(request), commit=True)
+            notify_user(
+                db,
+                user,
+                "account_created",
+                "Welcome to Ankit Stationery Mart",
+                f"Hello {user.full_name}, your account is ready. You signed in with Google, so there is no password to remember.",
+                related_type="user",
+                related_id=user.id,
+            )
+
+    _assert_can_sign_in(user)
+    user.last_login_at = now()
+    db.commit()
+    _merge_guest_cart(db, user, request)
+    payload = _start_session(db, user, request, response)
+    audit(
+        db,
+        "auth.google_login",
+        actor=user,
+        entity_type="user",
+        entity_id=user.id,
+        after={"created": created, "linked": linked},
+        ip_address=client_ip(request),
+        commit=True,
+    )
+    payload.update({"created": created, "linked": linked})
+    return payload
+
+
+@router.post("/google")
+def google_login(
+    payload: GoogleLoginIn,
+    request: Request,
+    response: Response,
+    db: OrmSession = Depends(get_db),
+):
+    """Sign in (or register) with a Google ID token verified server-side."""
+    enforce(request, "google_login", 20, 600)
+    try:
+        identity = verify_google_credential(payload.credential)
+    except GoogleAuthError as exc:
+        if exc.code == "not_configured":
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, exc.message)
+        audit(db, "auth.google_failed", entity_type="google", entity_id=exc.code, ip_address=client_ip(request), commit=True)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, exc.message)
+    return _google_login(db, identity, request, response)
+
+
+@router.post("/google/link")
+def google_link(
+    payload: GoogleLoginIn,
+    request: Request,
+    response: Response,
+    user: User = Depends(require_user),
+    db: OrmSession = Depends(get_db),
+):
+    """Attach a Google account to the signed-in account (password users)."""
+    enforce(request, "google_link", 10, 600)
+    try:
+        identity = verify_google_credential(payload.credential)
+    except GoogleAuthError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE if exc.code == "not_configured" else status.HTTP_401_UNAUTHORIZED,
+            exc.message,
+        )
+    if identity.email != user.email.lower():
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "That Google account uses a different email address. Sign in with the matching account.",
+        )
+    holder = db.scalar(select(User).where(User.google_sub == identity.sub, User.id != user.id))
+    if holder:
+        raise HTTPException(status.HTTP_409_CONFLICT, "That Google account is already linked to another user.")
+    user.google_sub = identity.sub
+    if not user.email_verified_at:
+        user.email_verified_at = now()
+    db.commit()
+    audit(db, "auth.google_linked", actor=user, entity_type="user", entity_id=user.id, after={"source": "account settings"}, ip_address=client_ip(request), commit=True)
+    return {"ok": True, "user": user_public(user)}
 
 
 @router.post("/logout")
@@ -170,8 +334,13 @@ def update_profile(payload: ProfileIn, user: User = Depends(require_user), db: O
 @router.post("/change-password")
 def change_password(payload: ChangePasswordIn, request: Request, user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
     enforce(request, "password_change", 5, 900)
-    if not verify_password(payload.current_password, user.password_hash):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    if has_usable_password(user):
+        if not verify_password(payload.current_password, user.password_hash):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    elif payload.current_password:
+        # Account created through Google sign-in: there is no password to check,
+        # but a supplied one suggests the caller expected otherwise.
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This account has no password yet. Leave the current password empty to set one.")
     user.password_hash = hash_password(payload.new_password)
     db.commit()
     audit(db, "account.password_changed", actor=user, entity_type="user", entity_id=user.id, ip_address=client_ip(request), commit=True)

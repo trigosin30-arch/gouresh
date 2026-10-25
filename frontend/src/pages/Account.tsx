@@ -262,16 +262,23 @@ export default function Account() {
                 <form onSubmit={changePassword} className="card space-y-3 p-5">
                   <h2 className="text-base font-semibold text-navy-900">Change password</h2>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Current password" required>
-                      <input
-                        type="password"
-                        className="input"
-                        required
-                        autoComplete="current-password"
-                        value={passwords.current_password}
-                        onChange={(e) => setPasswords({ ...passwords, current_password: e.target.value })}
-                      />
-                    </Field>
+                    {user?.has_password === false ? (
+                      <p className="rounded-lg bg-navy-50 px-3 py-2 text-sm text-navy-900">
+                        You sign in with Google and have no password yet. Set one below to also be able to sign in with
+                        your email address.
+                      </p>
+                    ) : (
+                      <Field label="Current password" required>
+                        <input
+                          type="password"
+                          className="input"
+                          required
+                          autoComplete="current-password"
+                          value={passwords.current_password}
+                          onChange={(e) => setPasswords({ ...passwords, current_password: e.target.value })}
+                        />
+                      </Field>
+                    )}
                     <Field label="New password" required hint="At least 10 characters.">
                       <input
                         type="password"

@@ -28,6 +28,16 @@ def hash_password(password: str) -> str:
     return _hasher.hash(password)
 
 
+# Stored for accounts created through Google sign-in. It is not a valid Argon2
+# hash, so verify_password() always rejects it and no password login is possible
+# until the user sets one from their account page.
+UNUSABLE_PASSWORD = "!no-password-set"
+
+
+def has_usable_password(user) -> bool:  # noqa: ANN001 - avoids a models import cycle
+    return bool(user.password_hash) and user.password_hash != UNUSABLE_PASSWORD
+
+
 def verify_password(password: str, password_hash: str) -> bool:
     try:
         return _hasher.verify(password_hash, password)

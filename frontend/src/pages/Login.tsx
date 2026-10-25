@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import Seo from '../components/Seo'
+import GoogleSignIn from '../components/GoogleSignIn'
 import { Field } from '../components/ui'
 import { useStore } from '../context/StoreContext'
 import type { User } from '../types'
@@ -15,17 +16,37 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const next = params.get('next') || ''
 
+  const finishLogin = (result: { user: User }, welcome: string) => {
+    setUser(result.user)
+    void refresh()
+    toast(welcome)
+    const target = next.startsWith('/') ? next : result.user.role === 'customer' ? '/account' : '/admin'
+    navigate(target, { replace: true })
+  }
+
+  const googleSignIn = async (credential: string) => {
+    setError(null)
+    setLoading(true)
+    try {
+      const result = await api<{ user: User; created: boolean }>('/api/auth/google', {
+        method: 'POST',
+        body: { credential },
+      })
+      finishLogin(result, result.created ? `Welcome, ${result.user.full_name.split(' ')[0]}.` : `Welcome back, ${result.user.full_name.split(' ')[0]}.`)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError(null)
     setLoading(true)
     try {
       const result = await api<{ user: User }>('/api/auth/login', { method: 'POST', body: form })
-      setUser(result.user)
-      await refresh()
-      toast(`Welcome back, ${result.user.full_name.split(' ')[0]}.`)
-      const target = next.startsWith('/') ? next : result.user.role === 'customer' ? '/account' : '/admin'
-      navigate(target, { replace: true })
+      finishLogin(result, `Welcome back, ${result.user.full_name.split(' ')[0]}.`)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -73,6 +94,7 @@ export default function Login() {
                 {loading ? 'Signing in…' : 'Sign in'}
               </button>
             </form>
+            <GoogleSignIn onCredential={googleSignIn} onError={setError} text="signin_with" />
             <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
               <Link to="/forgot-password" className="link">Forgot your password?</Link>
               <Link to={`/register${next ? `?next=${encodeURIComponent(next)}` : ''}`} className="link">Create an account</Link>

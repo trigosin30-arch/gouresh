@@ -37,6 +37,7 @@ Open `/admin` for the panel. Because `SEED_DEMO=1`, the catalogue is sample data
 
 **Honest free-tier limits**
 
+* **Do not take real orders on the free database.** Render's free PostgreSQL expires on a fixed schedule (30 days from creation). Treat it as a demo database: migrate to a paid instance or an external Postgres, and complete a restore drill, before accepting real customer orders or payments.
 * The free web service **sleeps after ~15 minutes idle**; the next visit takes ~30 seconds.
 * The filesystem is **ephemeral** — uploaded photos disappear on redeploy. Attach a Render disk (paid) mounted at `/app/data` if uploads must persist.
 * Render's free Postgres is time-limited; before real trading, move to a paid database or an external Postgres (Neon, Supabase, RDS) and set `DATABASE_URL` manually (the app accepts `postgres://`, `postgresql://` and `postgresql+psycopg://`).
@@ -77,6 +78,33 @@ fly deploy
 ```
 
 Fly requires a payment method. Uploads are ephemeral unless you create a volume and uncomment the `[[mounts]]` block in `fly.toml`.
+
+---
+
+## Google Sign-In setup
+
+The code is implemented and tested; it stays switched off until a client id is configured. Nothing breaks while it is off — the storefront shows password login only, and `GET /api/auth/providers` reports `{"google": {"enabled": false}}`.
+
+1. **Google Cloud Console** → create (or pick) a project → **APIs & Services → OAuth consent screen**. Fill the app name, support email and developer contact. While the app is in *Testing*, only test users you add can sign in; publish it when ready.
+2. **Credentials → Create credentials → OAuth client ID → Web application.**
+   * **Authorised JavaScript origins** — the exact origin, with no trailing slash:
+     * `https://ankit-stationery-mart.onrender.com`
+     * `http://localhost:5173` (only if you use the Vite dev server)
+   * **Authorised redirect URIs** — not needed. Google Identity Services posts the ID token to your page; the backend verifies it.
+3. Copy the **client id** (ends in `.apps.googleusercontent.com`).
+4. On Render: **ankit-stationery-mart → Environment → Add environment variable** → `GOOGLE_CLIENT_ID` = that value → save (this redeploys).
+5. Optional: set `GOOGLE_HOSTED_DOMAIN` (e.g. `school.edu.in`) to accept only accounts from one Google Workspace domain.
+
+Verify it works: open `/login`, click the Google button, sign in. You should land on `/account` with `has_password: false` in `GET /api/auth/me`. Re-signing in reuses the same account; no duplicate is created.
+
+**Failure modes you may actually see**
+
+| Symptom | Cause |
+| --- | --- |
+| Button does not appear at all | `GOOGLE_CLIENT_ID` is empty on the server (`/api/auth/providers` shows `enabled: false`) |
+| "The given origin is not allowed for this client id" | The origin in Google Console does not match the site origin exactly (`https`, no trailing slash) |
+| "Google sign-in could not load" | `accounts.google.com` blocked by a network/proxy; password login still works |
+| `401 … could not be verified` | Clock skew, expired token, or a token minted for a different client id |
 
 ---
 

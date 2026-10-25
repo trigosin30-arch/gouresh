@@ -59,6 +59,8 @@ class User(TimestampMixin, Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False, default="customer", index=True)
     status = Column(String(20), nullable=False, default="active")
+    # Google account id ("sub" claim). Nullable: most accounts use a password.
+    google_sub = Column(String(64), unique=True, nullable=True, index=True)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     phone_verified_at = Column(DateTime(timezone=True), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)

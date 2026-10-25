@@ -108,6 +108,9 @@ export type User = {
   role: 'customer' | 'staff' | 'admin'
   status: string
   email_verified: boolean
+  /** False for accounts created through Google sign-in that never set a password. */
+  has_password?: boolean
+  google_linked?: boolean
   created_at: string
 }
 

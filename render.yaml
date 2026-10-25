@@ -47,6 +47,13 @@ services:
         sync: false
       - key: DEMO_CUSTOMER_PASSWORD
         sync: false
+      # Google Sign-In. Set this to your OAuth Web client id to switch the
+      # Google button on; leave empty and the storefront offers password login
+      # only (the API reports Google as unavailable rather than failing).
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_HOSTED_DOMAIN
+        value: ""
       # Optional integrations. Empty values keep them honestly disabled:
       # online payment is then unavailable at checkout and notifications are
       # recorded as "skipped" rather than claimed as sent. Fill these in from

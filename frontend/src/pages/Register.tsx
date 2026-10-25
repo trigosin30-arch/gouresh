@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import Seo from '../components/Seo'
+import GoogleSignIn from '../components/GoogleSignIn'
 import { Field } from '../components/ui'
 import { useStore } from '../context/StoreContext'
 import type { User } from '../types'
@@ -14,6 +15,25 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const next = params.get('next') || '/account'
+
+  const googleSignUp = async (credential: string) => {
+    setError(null)
+    setLoading(true)
+    try {
+      const result = await api<{ user: User; created: boolean }>('/api/auth/google', {
+        method: 'POST',
+        body: { credential },
+      })
+      setUser(result.user)
+      await refresh()
+      toast(result.created ? 'Account created. Welcome!' : `Welcome back, ${result.user.full_name.split(' ')[0]}.`)
+      navigate(next.startsWith('/') ? next : '/account', { replace: true })
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -118,6 +138,7 @@ export default function Register() {
                 {loading ? 'Creating account…' : 'Create account'}
               </button>
             </form>
+            <GoogleSignIn onCredential={googleSignUp} onError={setError} text="signup_with" />
             <p className="mt-4 text-sm text-slate-600">
               Already have an account? <Link to="/login" className="link">Sign in</Link>
             </p>

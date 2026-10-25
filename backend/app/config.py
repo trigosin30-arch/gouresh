@@ -54,6 +54,9 @@ class Settings:
         ]
         # Payment gateway (Razorpay). Online payments stay disabled until both
         # the merchant keys and the webhook secret are configured.
+        # Google Sign-In (optional). Disabled unless a client id is configured.
+        self.google_client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+        self.google_hosted_domain = os.getenv("GOOGLE_HOSTED_DOMAIN", "").strip() or None
         self.razorpay_key_id = os.getenv("RAZORPAY_KEY_ID", "")
         self.razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET", "")
         self.razorpay_webhook_secret = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
@@ -83,6 +86,10 @@ class Settings:
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def google_signin_available(self) -> bool:
+        return bool(self.google_client_id)
 
     @property
     def online_payments_available(self) -> bool:

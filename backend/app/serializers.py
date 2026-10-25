@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session as OrmSession
 
 from .constants import CONDITION_LABELS, LISTING_STATUS_LABELS
 from .models import Listing, Product, ProductImage, User
+from .security import UNUSABLE_PASSWORD
 from .services.commerce import available_stock
 
 
@@ -153,6 +154,9 @@ def user_public(user: Optional[User]) -> Optional[dict[str, Any]]:
         "role": user.role,
         "status": user.status,
         "email_verified": user.email_verified_at is not None,
+        # Tells the account page whether to ask for a current password.
+        "has_password": bool(user.password_hash) and user.password_hash != UNUSABLE_PASSWORD,
+        "google_linked": user.google_sub is not None,
         "created_at": user.created_at,
     }
 

@@ -70,6 +70,13 @@ class LoginIn(StrictModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class GoogleLoginIn(StrictModel):
+    # The ID token (JWT) produced by Google Identity Services in the browser.
+    credential: str = Field(min_length=20, max_length=8192)
+    # Optional: merge a guest cart after signing in (handled via cookies too).
+    remember: bool = True
+
+
 class ForgotPasswordIn(StrictModel):
     email: EmailStr
 
@@ -85,7 +92,8 @@ class ResetPasswordIn(StrictModel):
 
 
 class ChangePasswordIn(StrictModel):
-    current_password: str
+    # Empty for accounts created with Google sign-in (they have no password yet).
+    current_password: str = ""
     new_password: str
 
     @field_validator("new_password")

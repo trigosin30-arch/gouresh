@@ -21,7 +21,10 @@ def test_register_login_logout(client, db):
     assert response.status_code == 201, response.text
     assert response.json()["user"]["email"] == "new.customer@example.com"
     assert response.json()["user"]["role"] == "customer"
-    assert "password" not in response.text.lower()
+    # The response exposes a boolean flag, never a hash or the chosen password.
+    assert "password_hash" not in response.text.lower()
+    assert "$argon2" not in response.text
+    assert "correct-horse-battery" not in response.text
 
     assert client.get("/api/auth/me").json()["user"]["email"] == "new.customer@example.com"
     assert client.post("/api/auth/logout", headers=csrf(client)).status_code == 200

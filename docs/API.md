@@ -17,6 +17,8 @@ Two cookies are used:
 | `asm_session` | `HttpOnly`, `SameSite=Lax`, `Secure` when configured | Session identifier (random token; only its SHA-256 is stored server-side) |
 | `asm_csrf` | readable by JS, `SameSite=Lax`, `Secure` when configured | CSRF token for the double-submit check |
 
+**Google sign-in** accepts the ID token (JWT) issued by Google Identity Services in the browser and verifies it on the server: signature against Google's certificates, `iss`, `aud` (= `GOOGLE_CLIENT_ID`), expiry (10 s skew), `email_verified`, and optionally `hd` when `GOOGLE_HOSTED_DOMAIN` is set. The verified `sub` is stored on the user, never in the cookie, and `role` is never taken from the token. Accounts created this way have no password (`has_password: false`) and can set one from the account page without supplying a current password.
+
 Restricted accounts are refused at sign-in (`403`) and every authenticated route re-checks the account status, so an old cookie cannot outlive a restriction.
 
 Every mutating request (`POST`, `PUT`, `PATCH`, `DELETE`) to `/api/**` must send an `X-CSRF-Token` header whose value equals the `asm_csrf` cookie. A first `GET` (the SPA calls `GET /api/store/bootstrap`) issues the cookie.
@@ -157,6 +159,9 @@ Checkout body:
 | --- | --- | --- |
 | `POST` | `/api/auth/register` | Creates a customer account and session |
 | `POST` | `/api/auth/login` / `POST /api/auth/logout` | Session lifecycle |
+| `GET` | `/api/auth/providers` | Whether Google sign-in is configured; returns the public client id |
+| `POST` | `/api/auth/google` | Sign in or register with a Google ID token (verified server-side). Returns `created`/`linked` |
+| `POST` | `/api/auth/google/link` | Attach a Google account to the signed-in account |
 | `GET` | `/api/auth/me` | Session user or `{user: null}` |
 | `POST` | `/api/auth/profile` | Name and phone |
 | `POST` | `/api/auth/change-password` | Requires the current password |
