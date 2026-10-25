@@ -221,12 +221,12 @@ LEGACY_PAGES = {
 }
 
 
-@app.get("/healthz", include_in_schema=False)
+@app.api_route("/healthz", methods=["GET", "HEAD"], include_in_schema=False)
 def healthz():
     return Response(status_code=200 if ping() else 503)
 
 
-@app.get("/{legacy_page}.html", include_in_schema=False)
+@app.api_route("/{legacy_page}.html", methods=["GET", "HEAD"], include_in_schema=False)
 def legacy_page(legacy_page: str):
     target = LEGACY_PAGES.get(f"{legacy_page}.html")
     if target:
@@ -234,7 +234,7 @@ def legacy_page(legacy_page: str):
     return RedirectResponse("/404", status_code=302)
 
 
-@app.get("/{full_path:path}", include_in_schema=False)
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 def spa(full_path: str):
     if full_path.startswith(("api/", "uploads/", "docs", "redoc", "openapi")):
         return JSONResponse({"detail": "Not found"}, status_code=404)

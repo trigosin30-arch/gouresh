@@ -114,3 +114,9 @@ def test_database_urls_from_hosting_providers_are_normalised(given, expected):
     from app.config import _normalise_database_url
 
     assert _normalise_database_url(given) == expected
+
+
+def test_head_requests_are_supported_on_public_routes(client, dist):
+    """Uptime monitors and proxies probe with HEAD; a 405 looks like an outage."""
+    for path in ("/healthz", "/", "/products"):
+        assert client.head(path).status_code == 200, path
